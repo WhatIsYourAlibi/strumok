@@ -26,7 +26,7 @@ void testKeyStream() {
     std::cout << "Test Key Stream\n";
     bool ok = true;
     for (size_t i = 0; i < expected.size(); ++i) {
-        uint64_t actual = cipher.next();
+        uint64_t actual = cipher.Strm();
         std::cout << "Z" << i << ": " << std::hex << std::setw(16) << std::setfill('0') << actual;
 
         if (actual != expected[i]) {

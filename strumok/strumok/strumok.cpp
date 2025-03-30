@@ -4,9 +4,10 @@
 #include <vector>
 #include <cstdint>
 #include <array>
+#include <iostream>
 
-Strumok::Strumok(std::vector<uint64_t> key, std::vector<uint64_t> iv, StrumokMode mode)
-    : r1(0), r2(0), s(0), Register{} {
+Strumok::Strumok(const std::vector<uint64_t>& key, const std::vector<uint64_t>& iv, const StrumokMode mode)
+    : Register{}, r1(0), r2(0), s(0) {
     if (mode == StrumokMode::Strumok256) {
         if (key.size() != 4 || iv.size() != 4)
             throw std::invalid_argument("Strumok-256 requires 256-bit key and IV");
@@ -60,47 +61,49 @@ Strumok::Strumok(std::vector<uint64_t> key, std::vector<uint64_t> iv, StrumokMod
         Register[0] ^= iv[0];
     }
 
-    for (int i = 0; i < 32; i++) initRound();
+    for (int i = 0; i < 32; i++) InitRound();
+    t = -1;
 }
 
-uint64_t Strumok::next() {
-    nextState();
+uint64_t Strumok::Strm() {
+    ++t;
+    NextState();
     return (Register[0] ^ FSM(Register[15], r1, r2));
 }
 
-void Strumok::initRound() {
+void Strumok::InitRound() {
     // Previous state
-    uint64_t x = mulAlpha(Register[0]) ^ Register[13] ^ mulAlphaInv(Register[11]) ^ FSM(Register[15], r1, r2);
+    const uint64_t x = MulAlpha(Register[0]) ^ Register[13] ^ MulAlphaInv(Register[11]) ^ FSM(Register[15], r1, r2);
     const uint64_t r2_temp = r2;
     r2 = T(r1);
     r1 = (r2_temp + Register[13]);
 
     // Current state
-    shift();
+    Shift();
     Register[15] = x;
 }
 
-void Strumok::nextState() {
+void Strumok::NextState() {
     // Previous state
-    s = mulAlpha(Register[0]) ^ Register[13] ^ mulAlphaInv(Register[11]);
+    s = MulAlpha(Register[0]) ^ Register[13] ^ MulAlphaInv(Register[11]);
     const uint64_t r2_temp = r2;
     r2 = T(r1);
     r1 = (r2_temp + Register[13]);
 
     // Current state
-    shift();
+    Shift();
     Register[15] = s;
 }
 
-uint64_t Strumok::FSM(uint64_t s, uint64_t a, uint64_t b) {
-    return ((s + a) ^ b);
+uint64_t Strumok::FSM(const uint64_t s, const uint64_t r1, const uint64_t r2) {
+    return ((s + r1) ^ r2);
 }
 
-void Strumok::shift() {
+void Strumok::Shift() {
     for (int i = 0; i < 15; i++) Register[i] = Register[i + 1];
 }
 
-uint64_t Strumok::T(uint64_t x) {
+uint64_t Strumok::T(const uint64_t x) {
     return ((strumok::T0[x & 0xff]) ^
         (strumok::T1[(x >> 8) & 0xff]) ^
         (strumok::T2[(x >> 16) & 0xff]) ^
@@ -111,10 +114,18 @@ uint64_t Strumok::T(uint64_t x) {
         (strumok::T7[(x >> 56) & 0xff]));
 }
 
-uint64_t Strumok::mulAlpha(const uint64_t w) {
+uint64_t Strumok::MulAlpha(const uint64_t w) {
     return (((w) << 8) ^ (strumok::alpha_mul[w >> 56]));
 }
 
-uint64_t Strumok::mulAlphaInv(const uint64_t w) {
+uint64_t Strumok::MulAlphaInv(const uint64_t w) {
     return (((w) >> 8) ^ (strumok::alpha_inv_mul[w & 0xff]));
+}
+
+void Strumok::ShowState() const {
+    for (int i = 0; i < 16; i++) {
+        std::cout << "S" << std::dec << t + i << ": " << std::hex << Register[i] << std::endl;
+    }
+    std::cout << "R1_" << std::dec << t << ": " << std::hex << r1 << std::endl;
+    std::cout << "R2_" << std::dec << t << ": " << std::hex << r2 << std::endl;
 }
