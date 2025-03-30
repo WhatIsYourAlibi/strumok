@@ -33,8 +33,6 @@ void RestoreState(std::vector<u64t>& S, std::vector<u64t>& R, const std::vector<
     R[10] = Strumok::T(S[21] + R[8]);
     R[11] = Strumok::T(S[22] + R[9]);
     S[23] = S[20] ^ Strumok::MulAlphaInv(S[18]) ^ Strumok::MulAlpha(S[7]);
-    S[16] = Strumok::MulAlpha(S[21] ^ S[18] ^ Strumok::MulAlpha(S[5]));
-    S[15] = Strumok::MulAlpha(S[20] ^ S[17] ^ Strumok::MulAlpha(S[4]));
     // Fourth step
     R[12] = Strumok::T(S[23] + R[10]);
     S[8] = z[8] ^ Strumok::FSM(S[23], R[7] + S[20], R[8]);
@@ -63,17 +61,26 @@ void RestoreState(std::vector<u64t>& S, std::vector<u64t>& R, const std::vector<
     R[14] = Strumok::T(S[25] + R[12]);
     S[14] = z[14] ^ Strumok::FSM(S[29], R[13] + S[26], R[14]);
     S[30] = S[27] ^ Strumok::MulAlphaInv(S[25]) ^ Strumok::MulAlpha(S[14]);
+
+    R[15] = Strumok::T(S[26] + R[13]);
+    S[15] = z[15] ^ Strumok::FSM(S[30], R[14] + S[27], R[15]);
+    S[31] = S[28] ^ Strumok::MulAlphaInv(S[26]) ^ Strumok::MulAlpha(S[15]);
+
+    R[16] = Strumok::T(S[27] + R[14]);
+    S[16] = z[16] ^ Strumok::FSM(S[31], R[15] + S[28], R[16]);
+    S[32] = S[29] ^ Strumok::MulAlphaInv(S[27]) ^ Strumok::MulAlpha(S[16]);
 }
 
 int main() {
     const std::vector<u64t> Z = {
         0xfe44a2508b5a2acd, 0xaf355b4ed21d2742, 0xdcd7fdd6a57a9e71, 0x5d267bd2739fb5eb, 0xb22eee96b2832072,
         0xc7de6a4cdaa9a847, 0x72d5da93812680f2, 0x4a0acb7e93da2ce0, 0xa8d2064f319678c4, 0x433f87b11a94c349,
-        0xf143c3411fbab1ec, 0xa2b17537cfb0984d, 0x5b00072536bcebb3, 0x57a59ee3e14ac5b7, 0xda7448a47e4574d6
-    }; // Known values of gamma from 0 to 14
+        0xf143c3411fbab1ec, 0xa2b17537cfb0984d, 0x5b00072536bcebb3, 0x57a59ee3e14ac5b7, 0xda7448a47e4574d6,
+        0xce90cebbbe112560, 0xe095e5693da81821
+    }; // Known values of gamma from 0 to 16
 
-    std::vector<u64t> S(31, 0);
-    std::vector<u64t> R(15, 0);
+    std::vector<u64t> S(33, 0);
+    std::vector<u64t> R(17, 0);
 
     // Our guessed values for given basis
     S[22] = 0x874f28ca919b4b89;
